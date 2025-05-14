@@ -1,0 +1,6 @@
+
+[functions.check-reminders]
+verify_jwt = false
+
+[cron.check-reminders]
+schedule = "* * * * *"

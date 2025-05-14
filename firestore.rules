@@ -1,0 +1,64 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Users collection rules
+    match /users/{userId} {
+      // Allow read/write if authenticated and it's their own document
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow create if authenticated
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Buildings collection rules
+    match /buildings/{buildingId} {
+      // Allow read if user is authenticated and owns the building
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      
+      // Allow create for authenticated users who set themselves as owner
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      
+      // Allow updates and deletes for building owners
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      
+      // Units subcollection permissions
+      match /units/{unitId} {
+        allow read: if request.auth != null && 
+          get(/databases/$(database)/documents/buildings/$(buildingId)).data.ownerId == request.auth.uid;
+        allow write: if request.auth != null && 
+          get(/databases/$(database)/documents/buildings/$(buildingId)).data.ownerId == request.auth.uid;
+      }
+    }
+    
+    // Expenses tied to owner
+    match /expenses/{expenseId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Reminders tied to owner
+    match /reminders/{reminderId} {
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Previous tenants tied to owner - Ensuring proper permissions
+    match /previousTenants/{tenantId} {
+      // Allow read if user is authenticated and owns the tenant record
+      allow read: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      
+      // Allow create if user is setting themselves as the owner
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      
+      // Allow update/delete if user owns the tenant record
+      allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}
