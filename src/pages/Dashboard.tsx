@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { format, startOfMonth } from "date-fns";
 import { ensureDate } from "@/lib/firebase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { 
   Pagination, 
@@ -18,6 +19,7 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const { 
@@ -200,42 +202,44 @@ const Dashboard = () => {
               )}
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 max-h-[300px] overflow-auto">
-                {currentBuildings.length > 0 ? (
-                  currentBuildings.map((building) => (
-                    <div 
-                      key={building.id} 
-                      className="flex items-center justify-between p-2 rounded bg-rentroost-accent cursor-pointer hover:bg-rentroost-accent/80 transition-colors"
-                      onClick={() => setSelectedBuilding(building.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-full text-rentroost-primary">
-                          <Building className="h-4 w-4" />
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-4">
+                  {currentBuildings.length > 0 ? (
+                    currentBuildings.map((building) => (
+                      <div 
+                        key={building.id} 
+                        className="flex items-center justify-between p-2 rounded bg-rentroost-accent cursor-pointer hover:bg-rentroost-accent/80 transition-colors"
+                        onClick={() => setSelectedBuilding(building.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-white rounded-full text-rentroost-primary">
+                            <Building className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{building.name}</h4>
+                            <p className="text-sm text-gray-500">{building.unitsCount} units</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-medium">{building.name}</h4>
-                          <p className="text-sm text-gray-500">{building.unitsCount} units</p>
+                        <div className="text-right">
+                          <p className="font-medium">₹{building.receivedRent.toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">/ ₹{building.expectedRent.toLocaleString()}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">₹{building.receivedRent.toLocaleString()}</p>
-                        <p className="text-sm text-gray-500">/ ₹{building.expectedRent.toLocaleString()}</p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No properties added yet</p>
+                      <Button 
+                        className="mt-2" 
+                        variant="outline"
+                        onClick={() => navigate("/buildings")}
+                      >
+                        Add Property
+                      </Button>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No properties added yet</p>
-                    <Button 
-                      className="mt-2" 
-                      variant="outline"
-                      onClick={() => navigate("/buildings")}
-                    >
-                      Add Property
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </ScrollArea>
               
               {buildings.length > 0 && totalBuildingPages > 1 && (
                 <Pagination className="mt-4">
@@ -292,33 +296,35 @@ const Dashboard = () => {
               )}
             </CardHeader>
             <CardContent>
-              <div className="space-y-4 max-h-[300px] overflow-auto">
-                {currentReminders.length > 0 ? (
-                  currentReminders.map((reminder) => (
-                    <div key={reminder.id} className="flex items-start gap-3 p-2 rounded bg-rentroost-accent">
-                      <div className="p-2 bg-white rounded-full text-rentroost-primary mt-1">
-                        <Lightbulb className="h-4 w-4" />
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-4">
+                  {currentReminders.length > 0 ? (
+                    currentReminders.map((reminder) => (
+                      <div key={reminder.id} className="flex items-start gap-3 p-2 rounded bg-rentroost-accent">
+                        <div className="p-2 bg-white rounded-full text-rentroost-primary mt-1">
+                          <Lightbulb className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{reminder.title}</h4>
+                          <p className="text-sm text-gray-500">{format(reminder.date, "MMM d, yyyy")}</p>
+                          <p className="text-sm mt-1">{reminder.message}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium">{reminder.title}</h4>
-                        <p className="text-sm text-gray-500">{format(reminder.date, "MMM d, yyyy")}</p>
-                        <p className="text-sm mt-1">{reminder.message}</p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No reminders added yet</p>
+                      <Button 
+                        className="mt-2" 
+                        variant="outline"
+                        onClick={() => navigate("/reminders")}
+                      >
+                        Add Reminder
+                      </Button>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No reminders added yet</p>
-                    <Button 
-                      className="mt-2" 
-                      variant="outline"
-                      onClick={() => navigate("/reminders")}
-                    >
-                      Add Reminder
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </ScrollArea>
               
               {pendingReminders.length > 0 && totalReminderPages > 1 && (
                 <Pagination className="mt-4">
@@ -377,7 +383,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {currentTenants.length > 0 ? (
-              <div>
+              <ScrollArea className="h-[300px]">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {currentTenants.map((tenant) => {
                     const moveOutDate = tenant.moveOutDate ? ensureDate(tenant.moveOutDate) : null;
@@ -400,81 +406,83 @@ const Dashboard = () => {
                     );
                   })}
                 </div>
-                
-                {totalTenantPages > 1 && (
-                  <Pagination className="mt-4">
-                    <PaginationContent>
-                      {tenantsPage > 1 && (
-                        <PaginationItem>
-                          <PaginationPrevious onClick={() => setTenantsPage(prev => Math.max(1, prev - 1))} />
-                        </PaginationItem>
-                      )}
-                      
-                      {Array.from({ length: Math.min(3, totalTenantPages) }).map((_, i) => {
-                        const pageToShow = tenantsPage === 1 ? i + 1 : 
-                                           tenantsPage === totalTenantPages ? totalTenantPages - 2 + i : 
-                                           tenantsPage - 1 + i;
-                        
-                        if (pageToShow > 0 && pageToShow <= totalTenantPages) {
-                          return (
-                            <PaginationItem key={pageToShow}>
-                              <PaginationLink 
-                                isActive={tenantsPage === pageToShow} 
-                                onClick={() => setTenantsPage(pageToShow)}
-                              >
-                                {pageToShow}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      {tenantsPage < totalTenantPages && (
-                        <PaginationItem>
-                          <PaginationNext onClick={() => setTenantsPage(prev => Math.min(totalTenantPages, prev + 1))} />
-                        </PaginationItem>
-                      )}
-                    </PaginationContent>
-                  </Pagination>
-                )}
-              </div>
+              </ScrollArea>
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500">No previous tenants recorded</p>
               </div>
             )}
+            
+            {totalTenantPages > 1 && (
+              <Pagination className="mt-4">
+                <PaginationContent>
+                  {tenantsPage > 1 && (
+                    <PaginationItem>
+                      <PaginationPrevious onClick={() => setTenantsPage(prev => Math.max(1, prev - 1))} />
+                    </PaginationItem>
+                  )}
+                  
+                  {Array.from({ length: Math.min(3, totalTenantPages) }).map((_, i) => {
+                    const pageToShow = tenantsPage === 1 ? i + 1 : 
+                                         tenantsPage === totalTenantPages ? totalTenantPages - 2 + i : 
+                                         tenantsPage - 1 + i;
+                      
+                    if (pageToShow > 0 && pageToShow <= totalTenantPages) {
+                      return (
+                        <PaginationItem key={pageToShow}>
+                          <PaginationLink 
+                            isActive={tenantsPage === pageToShow} 
+                            onClick={() => setTenantsPage(pageToShow)}
+                          >
+                            {pageToShow}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {tenantsPage < totalTenantPages && (
+                    <PaginationItem>
+                      <PaginationNext onClick={() => setTenantsPage(prev => Math.min(totalTenantPages, prev + 1))} />
+                    </PaginationItem>
+                  )}
+                </PaginationContent>
+              </Pagination>
+            )}
           </CardContent>
         </Card>
 
         <Dialog open={!!selectedBuilding} onOpenChange={() => setSelectedBuilding(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[80vh] w-full mx-4">
             <DialogHeader>
               <DialogTitle>
                 Unpaid Rent Details - {paginatedBuildings.find(b => b.id === selectedBuilding)?.name}
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              {paginatedBuildings
-                .find(b => b.id === selectedBuilding)
-                ?.unpaidUnits.map((unit, index) => (
-                  <div key={index} className="p-4 rounded-lg border">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{unit.unitName}</h4>
-                        <p className="text-sm text-gray-500">{unit.tenantName}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">Paid: ₹{unit.rentPaid.toLocaleString()}</p>
-                        <p className="text-sm text-gray-500">of ₹{unit.rentAmount.toLocaleString()}</p>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              <div className="space-y-4">
+                {paginatedBuildings
+                  .find(b => b.id === selectedBuilding)
+                  ?.unpaidUnits.map((unit, index) => (
+                    <div key={index} className="p-4 rounded-lg border">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{unit.unitName}</h4>
+                          <p className="text-sm text-gray-500">{unit.tenantName}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">Paid: ₹{unit.rentPaid.toLocaleString()}</p>
+                          <p className="text-sm text-gray-500">of ₹{unit.rentAmount.toLocaleString()}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              {paginatedBuildings.find(b => b.id === selectedBuilding)?.unpaidUnits.length === 0 && (
-                <p className="text-center text-gray-500 py-4">All tenants have paid their rent for this month.</p>
-              )}
-            </div>
+                  ))}
+                {paginatedBuildings.find(b => b.id === selectedBuilding)?.unpaidUnits.length === 0 && (
+                  <p className="text-center text-gray-500 py-4">All tenants have paid their rent for this month.</p>
+                )}
+              </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>

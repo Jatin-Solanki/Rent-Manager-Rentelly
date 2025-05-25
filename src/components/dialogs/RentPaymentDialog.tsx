@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { RentFormData, DialogProps } from "@/types/tenant";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ensureValidDate = (date: unknown): Date => {
   if (date instanceof Date && !isNaN(date.getTime())) {
@@ -58,6 +58,8 @@ export function RentPaymentDialog({ open, onClose, unit, onSubmit, loading, reco
     paymentMethod: "",
     remarks: "",
   });
+
+  const isMobile = useIsMobile();
 
   // Initialize rentPayments array if it doesn't exist
   useEffect(() => {
@@ -172,158 +174,162 @@ export function RentPaymentDialog({ open, onClose, unit, onSubmit, loading, reco
               : "Add details for a new rent payment."}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="date" className="sm:text-right">
-              Date
-            </Label>
-            <div className="col-span-1 sm:col-span-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.date && "text-muted-foreground"
-                    )}
-                    disabled={loading}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.date ? (
-                      format(formData.date, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.date}
-                    onSelect={handleDateChange}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+        
+        <ScrollArea className={cn("w-full", isMobile ? "max-h-[60vh]" : "max-h-[70vh]")}>
+          <div className="grid gap-4 py-4 px-1">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="date" className="sm:text-right">
+                Date
+              </Label>
+              <div className="col-span-1 sm:col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.date && "text-muted-foreground"
+                      )}
+                      disabled={loading}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.date ? (
+                        format(formData.date, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.date}
+                      onSelect={handleDateChange}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="amount" className="sm:text-right">
+                Amount
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter rent amount"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="month" className="sm:text-right">
+                Month
+              </Label>
+              <select
+                id="month"
+                value={formData.month}
+                onChange={(e) => setFormData({ ...formData, month: e.target.value })}
+                className="col-span-1 sm:col-span-3 w-full h-10 px-3 rounded-md border border-input bg-background"
+                disabled={loading}
+              >
+                {months.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="year" className="sm:text-right">
+                Year
+              </Label>
+              <select
+                id="year"
+                value={formData.year}
+                onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
+                className="col-span-1 sm:col-span-3 w-full h-10 px-3 rounded-md border border-input bg-background"
+                disabled={loading}
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="paymentMethod" className="sm:text-right">
+                Payment Method
+              </Label>
+              <Input
+                id="paymentMethod"
+                type="text"
+                placeholder="Enter payment method"
+                value={formData.paymentMethod}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="remarks" className="sm:text-right">
+                Remarks
+              </Label>
+              <Input
+                id="remarks"
+                type="text"
+                placeholder="Enter remarks"
+                value={formData.remarks}
+                onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="mt-6">
+              <h3 className="text-sm font-medium mb-3">Recent Payments</h3>
+              <ScrollArea className="h-[200px] rounded-md border">
+                <div className="p-4">
+                  {recentPayments && recentPayments.length > 0 ? (
+                    recentPayments.map((payment) => (
+                      <Card key={payment.id} className="p-3 mb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 mr-2">
+                            <p className="text-sm font-medium">{`₹${payment.amount} - ${payment.month} ${payment.year}`}</p>
+                            <p className="text-xs text-gray-500">{formatSafeDate(payment.date)}</p>
+                            {payment.paymentMethod && (
+                              <p className="text-xs text-gray-500">{`Method: ${payment.paymentMethod}`}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleEditClick(payment);
+                            }}
+                            className="flex-shrink-0"
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No recent payments</p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="amount" className="sm:text-right">
-              Amount
-            </Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="Enter rent amount"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="month" className="sm:text-right">
-              Month
-            </Label>
-            <select
-              id="month"
-              value={formData.month}
-              onChange={(e) => setFormData({ ...formData, month: e.target.value })}
-              className="col-span-1 sm:col-span-3 w-full h-10 px-3 rounded-md border border-input bg-background"
-              disabled={loading}
-            >
-              {months.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="year" className="sm:text-right">
-              Year
-            </Label>
-            <select
-              id="year"
-              value={formData.year}
-              onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
-              className="col-span-1 sm:col-span-3 w-full h-10 px-3 rounded-md border border-input bg-background"
-              disabled={loading}
-            >
-              {years.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="paymentMethod" className="sm:text-right">
-              Payment Method
-            </Label>
-            <Input
-              id="paymentMethod"
-              type="text"
-              placeholder="Enter payment method"
-              value={formData.paymentMethod}
-              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="remarks" className="sm:text-right">
-              Remarks
-            </Label>
-            <Input
-              id="remarks"
-              type="text"
-              placeholder="Enter remarks"
-              value={formData.remarks}
-              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="mt-6">
-            <h3 className="text-sm font-medium mb-3">Recent Payments</h3>
-            <ScrollArea className="h-[200px] rounded-md border">
-              <div className="p-4">
-                {recentPayments && recentPayments.length > 0 ? (
-                  recentPayments.map((payment) => (
-                    <Card key={payment.id} className="p-3 mb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-2">
-                          <p className="text-sm font-medium">{`₹${payment.amount} - ${payment.month} ${payment.year}`}</p>
-                          <p className="text-xs text-gray-500">{formatSafeDate(payment.date)}</p>
-                          {payment.paymentMethod && (
-                            <p className="text-xs text-gray-500">{`Method: ${payment.paymentMethod}`}</p>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleEditClick(payment);
-                          }}
-                          className="flex-shrink-0"
-                          disabled={loading}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No recent payments</p>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
+        </ScrollArea>
+        
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
             Cancel

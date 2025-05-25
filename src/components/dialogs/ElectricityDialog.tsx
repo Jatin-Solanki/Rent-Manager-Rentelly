@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { ElectricFormData, DialogProps } from "@/types/tenant";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ensureValidDate = (date: unknown): Date => {
   if (date instanceof Date && !isNaN(date.getTime())) {
@@ -56,6 +56,8 @@ export function ElectricityDialog({ open, onClose, unit, onSubmit, loading, reco
     currentReading: 0,
     ratePerUnit: 8,
   });
+  
+  const isMobile = useIsMobile();
 
   // Initialize electricityRecords array if it doesn't exist
   useEffect(() => {
@@ -178,120 +180,124 @@ export function ElectricityDialog({ open, onClose, unit, onSubmit, loading, reco
               : "Enter the electricity consumption details for this month."}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="date" className="sm:text-right">
-              Date
-            </Label>
-            <div className="col-span-1 sm:col-span-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.date && "text-muted-foreground"
-                    )}
-                    disabled={loading}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.date ? (
-                      format(formData.date, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.date}
-                    onSelect={handleDateChange}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+        
+        <ScrollArea className={cn("w-full", isMobile ? "max-h-[60vh]" : "max-h-[70vh]")}>
+          <div className="grid gap-4 py-4 px-1">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="date" className="sm:text-right">
+                Date
+              </Label>
+              <div className="col-span-1 sm:col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.date && "text-muted-foreground"
+                      )}
+                      disabled={loading}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.date ? (
+                        format(formData.date, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.date}
+                      onSelect={handleDateChange}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="previousReading" className="sm:text-right">
+                Previous Reading
+              </Label>
+              <Input
+                id="previousReading"
+                type="number"
+                placeholder="Enter previous month's reading"
+                value={formData.previousReading}
+                onChange={(e) => setFormData({ ...formData, previousReading: Number(e.target.value) })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="currentReading" className="sm:text-right">
+                Current Reading
+              </Label>
+              <Input
+                id="currentReading"
+                type="number"
+                placeholder="Enter current month's reading"
+                value={formData.currentReading}
+                onChange={(e) => setFormData({ ...formData, currentReading: Number(e.target.value) })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="ratePerUnit" className="sm:text-right">
+                Rate per Unit
+              </Label>
+              <Input
+                id="ratePerUnit"
+                type="number"
+                placeholder="Enter rate per unit"
+                value={formData.ratePerUnit}
+                onChange={(e) => setFormData({ ...formData, ratePerUnit: Number(e.target.value) })}
+                className="col-span-1 sm:col-span-3"
+                disabled={loading}
+              />
+            </div>
+            <div className="mt-6">
+              <h3 className="text-sm font-medium mb-3">Recent Records</h3>
+              <ScrollArea className="h-[200px] rounded-md border">
+                <div className="p-4">
+                  {recentRecords && recentRecords.length > 0 ? (
+                    recentRecords.map((record) => (
+                      <Card key={record.id} className="p-3 mb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 mr-2">
+                            <p className="text-sm font-medium">{`₹${record.amount} - ${record.unitsConsumed} units`}</p>
+                            <p className="text-xs text-gray-500">{formatSafeDate(record.date)}</p>
+                            <p className="text-xs text-gray-500">{`Reading: ${record.previousReading} → ${record.currentReading}`}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleEditClick(record);
+                            }}
+                            className="flex-shrink-0"
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-4">No recent records</p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="previousReading" className="sm:text-right">
-              Previous Reading
-            </Label>
-            <Input
-              id="previousReading"
-              type="number"
-              placeholder="Enter previous month's reading"
-              value={formData.previousReading}
-              onChange={(e) => setFormData({ ...formData, previousReading: Number(e.target.value) })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="currentReading" className="sm:text-right">
-              Current Reading
-            </Label>
-            <Input
-              id="currentReading"
-              type="number"
-              placeholder="Enter current month's reading"
-              value={formData.currentReading}
-              onChange={(e) => setFormData({ ...formData, currentReading: Number(e.target.value) })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
-            <Label htmlFor="ratePerUnit" className="sm:text-right">
-              Rate per Unit
-            </Label>
-            <Input
-              id="ratePerUnit"
-              type="number"
-              placeholder="Enter rate per unit"
-              value={formData.ratePerUnit}
-              onChange={(e) => setFormData({ ...formData, ratePerUnit: Number(e.target.value) })}
-              className="col-span-1 sm:col-span-3"
-              disabled={loading}
-            />
-          </div>
-          <div className="mt-6">
-            <h3 className="text-sm font-medium mb-3">Recent Records</h3>
-            <ScrollArea className="h-[200px] rounded-md border">
-              <div className="p-4">
-                {recentRecords && recentRecords.length > 0 ? (
-                  recentRecords.map((record) => (
-                    <Card key={record.id} className="p-3 mb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-2">
-                          <p className="text-sm font-medium">{`₹${record.amount} - ${record.unitsConsumed} units`}</p>
-                          <p className="text-xs text-gray-500">{formatSafeDate(record.date)}</p>
-                          <p className="text-xs text-gray-500">{`Reading: ${record.previousReading} → ${record.currentReading}`}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleEditClick(record);
-                          }}
-                          className="flex-shrink-0"
-                          disabled={loading}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 text-center py-4">No recent records</p>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-        </div>
+        </ScrollArea>
+        
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
             Cancel
