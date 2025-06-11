@@ -61,7 +61,7 @@ export const MobileSidebar = ({ open, onClose }: MobileSidebarProps) => {
                 </div>
                 <SheetTitle className="text-lg">Rentelly</SheetTitle>
               </div>
-              <Button variant="ghost" size="icon" onClick={onClose}>
+              <Button  onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -81,7 +81,7 @@ export const MobileSidebar = ({ open, onClose }: MobileSidebarProps) => {
               href="#" 
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-rentroost-dark hover:bg-rentroost-accent"
             >
-              <FileText size={20} />
+              {/* <FileText size={20} /> */}
               {/* <span className="font-medium">Documentation</span> */}
             </a>
           </div>
