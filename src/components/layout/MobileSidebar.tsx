@@ -59,7 +59,7 @@ export const MobileSidebar = ({ open, onClose }: MobileSidebarProps) => {
                 <div className="bg-rentroost-primary p-2 rounded text-white mr-2">
                   <Building size={20} />
                 </div>
-                <SheetTitle className="text-lg">Rent Roost</SheetTitle>
+                <SheetTitle className="text-lg">Rentelly</SheetTitle>
               </div>
               <Button variant="ghost" size="icon" onClick={onClose}>
                 <X className="h-4 w-4" />
@@ -82,7 +82,7 @@ export const MobileSidebar = ({ open, onClose }: MobileSidebarProps) => {
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-rentroost-dark hover:bg-rentroost-accent"
             >
               <FileText size={20} />
-              <span className="font-medium">Documentation</span>
+              {/* <span className="font-medium">Documentation</span> */}
             </a>
           </div>
         </div>

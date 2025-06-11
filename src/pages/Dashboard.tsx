@@ -148,7 +148,7 @@ const Dashboard = () => {
     <Layout title="Dashboard">
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-rentroost-dark">Overview</h2>
+          <h2 className="text-2xl font-bold text-rentroost-dark">Current Month Overview</h2>
           <Button onClick={() => navigate("/buildings")}>
             <Building className="h-4 w-4 mr-2" />
             Manage Properties
@@ -190,9 +190,9 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-lg">Recent Activity</CardTitle>
+                <CardTitle className="text-lg">Each Property Rent</CardTitle>
                 <CardDescription>
-                  Your recent property management activities
+                  Click on below Property to check Tenants who do not paid this Month Rent
                 </CardDescription>
               </div>
               {buildings.length > buildingsPerPage && (
