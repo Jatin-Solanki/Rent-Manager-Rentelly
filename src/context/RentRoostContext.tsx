@@ -128,6 +128,7 @@ type RentRoostContextType = {
   editRentPayment: (unitId: string, paymentId: string, payment: Omit<RentPayment, 'id'>) => Promise<void>;
   editElectricityRecord: (unitId: string, recordId: string, record: Omit<ElectricityRecord, 'id'>) => Promise<void>;
   deleteReminder: (reminderId: string) => Promise<void>;
+  deleteExpense: (expenseId: string) => Promise<void>;
 };
 
 const RentRoostContext = createContext<RentRoostContextType | undefined>(undefined);
@@ -856,6 +857,27 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
+  const deleteExpense = async (expenseId: string) => {
+    try {
+      if (!currentUser) {
+        throw new Error("User not authenticated");
+      }
+      
+      const expense = expenses.find(e => e.id === expenseId);
+      if (!expense) {
+        console.error("Expense not found:", expenseId);
+        throw new Error("Expense not found");
+      }
+      
+      await deleteDoc(doc(db, "expenses", expenseId));
+      toast.success("Expense deleted successfully");
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      toast.error("Failed to delete expense: " + (error instanceof Error ? error.message : "Unknown error"));
+      throw error;
+    }
+  };
+
   const value = {
     buildings,
     currentBuilding,
@@ -878,6 +900,7 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     editRentPayment,
     editElectricityRecord,
     deleteReminder,
+    deleteExpense,
   };
 
   return (

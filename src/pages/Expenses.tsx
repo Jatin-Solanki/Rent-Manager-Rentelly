@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { BadgeDollarSign, Plus, Search, Filter } from "lucide-react";
+import { BadgeDollarSign, Plus, Search, Filter, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -37,10 +36,21 @@ import { CalendarIcon } from "lucide-react";
 import { fetchExpenses } from "@/lib/firebaseUtils";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { ensureDate } from "@/lib/firebase"; // Added the missing import
+import { ensureDate } from "@/lib/firebase";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Expenses = () => {
-  const { expenses, addExpense, buildings } = useRentRoost();
+  const { expenses, addExpense, buildings, deleteExpense } = useRentRoost();
   const { currentUser } = useAuth();
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,6 +113,14 @@ const Expenses = () => {
     } catch (error) {
       console.error("Error adding expense:", error);
       toast.error("Failed to add expense: " + (error instanceof Error ? error.message : "Unknown error"));
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      await deleteExpense(expenseId);
+    } catch (error) {
+      console.error("Error deleting expense:", error);
     }
   };
 
@@ -342,6 +360,7 @@ const Expenses = () => {
                     <TableHead>Property</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -361,6 +380,35 @@ const Expenses = () => {
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         ₹{expense.amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this expense? This action cannot be undone.
+                                <br /><br />
+                                <strong>Amount:</strong> ₹{expense.amount.toLocaleString()}<br />
+                                <strong>Description:</strong> {expense.description}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteExpense(expense.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))}
