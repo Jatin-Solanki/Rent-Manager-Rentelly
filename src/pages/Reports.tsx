@@ -73,53 +73,111 @@ const Reports = () => {
       const unitPayments = [];
 
       building.units.forEach(unit => {
-        if (!unit.tenant) return;
-        
-        const rentPayments = (unit.tenant.rentPayments || [])
-          .filter(payment => {
-            const paymentYear = payment.year.toString();
-            const paymentMonth = payment.month;
-            const startYear = dateRange.startDate.getFullYear();
-            const startMonth = format(dateRange.startDate, "MMMM");
-            const endYear = dateRange.endDate.getFullYear();
-            const endMonth = format(dateRange.endDate, "MMMM");
-            
-            const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
-            const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
-            const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
-            
-            return paymentDate >= startDate && paymentDate <= endDate;
-          });
+        // Process current tenant
+        if (unit.tenant) {
+          const rentPayments = (unit.tenant.rentPayments || [])
+            .filter(payment => {
+              const paymentYear = payment.year.toString();
+              const paymentMonth = payment.month;
+              const startYear = dateRange.startDate.getFullYear();
+              const startMonth = format(dateRange.startDate, "MMMM");
+              const endYear = dateRange.endDate.getFullYear();
+              const endMonth = format(dateRange.endDate, "MMMM");
+              
+              const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
+              const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
+              const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
+              
+              return paymentDate >= startDate && paymentDate <= endDate;
+            });
 
-        const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
-        totalPayments += totalPaid;
+          const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
+          totalPayments += totalPaid;
 
-        rentPayments.forEach(payment => {
-          unitPayments.push({
-            buildingName: building.name,
-            unitName: unit.name,
-            tenantName: unit.tenant.name,
-            amount: payment.amount,
-            paymentMethod: payment.paymentMethod
+          rentPayments.forEach(payment => {
+            unitPayments.push({
+              buildingName: building.name,
+              unitName: unit.name,
+              tenantName: unit.tenant.name,
+              amount: payment.amount,
+              paymentMethod: payment.paymentMethod
+            });
           });
-        });
+        }
+
+        // Process previous tenants
+        if (unit.previousTenants) {
+          unit.previousTenants.forEach(prevTenant => {
+            const rentPayments = (prevTenant.rentPayments || [])
+              .filter(payment => {
+                const paymentYear = payment.year.toString();
+                const paymentMonth = payment.month;
+                const startYear = dateRange.startDate.getFullYear();
+                const startMonth = format(dateRange.startDate, "MMMM");
+                const endYear = dateRange.endDate.getFullYear();
+                const endMonth = format(dateRange.endDate, "MMMM");
+                
+                const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
+                const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
+                const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
+                
+                return paymentDate >= startDate && paymentDate <= endDate;
+              });
+
+            const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
+            totalPayments += totalPaid;
+
+            rentPayments.forEach(payment => {
+              unitPayments.push({
+                buildingName: building.name,
+                unitName: unit.name,
+                tenantName: `${prevTenant.name} (Previous)`,
+                amount: payment.amount,
+                paymentMethod: payment.paymentMethod
+              });
+            });
+          });
+        }
       });
 
       const buildingElectricity = building.units.reduce((total, unit) => {
-        if (!unit.tenant) return total;
+        let unitTotal = 0;
         
-        return total + (unit.tenant.electricityRecords || [])
-          .filter(record => {
-            try {
-              const recordDate = ensureDate(record.date);
-              return recordDate >= dateRange.startDate && 
-                recordDate <= dateRange.endDate;
-            } catch (error) {
-              console.error("Error processing electricity record date:", error);
-              return false;
-            }
-          })
-          .reduce((sum, record) => sum + record.amount, 0);
+        // Process current tenant
+        if (unit.tenant) {
+          unitTotal += (unit.tenant.electricityRecords || [])
+            .filter(record => {
+              try {
+                const recordDate = ensureDate(record.date);
+                return recordDate >= dateRange.startDate && 
+                  recordDate <= dateRange.endDate;
+              } catch (error) {
+                console.error("Error processing electricity record date:", error);
+                return false;
+              }
+            })
+            .reduce((sum, record) => sum + record.amount, 0);
+        }
+        
+        // Process previous tenants
+        if (unit.previousTenants) {
+          unit.previousTenants.forEach(prevTenant => {
+            unitTotal += (prevTenant.electricityRecords || [])
+              .filter(record => {
+                try {
+                  const recordDate = ensureDate(record.date);
+                  return recordDate >= dateRange.startDate && 
+                    recordDate <= dateRange.endDate;
+                } catch (error) {
+                  console.error("Error processing electricity record date:", error);
+                  return false;
+                }
+              })
+              .reduce((sum, record) => sum + record.amount, 0);
+          });
+        }
+        
+        return total + unitTotal;
       }, 0);
 
       const buildingExpenses = (expenses || [])
@@ -151,53 +209,111 @@ const Reports = () => {
       const unitPayments = [];
 
       building.units.forEach(unit => {
-        if (!unit.tenant) return;
-        
-        const rentPayments = (unit.tenant.rentPayments || [])
-          .filter(payment => {
-            const paymentYear = payment.year.toString();
-            const paymentMonth = payment.month;
-            const startYear = dateRange.startDate.getFullYear();
-            const startMonth = format(dateRange.startDate, "MMMM");
-            const endYear = dateRange.endDate.getFullYear();
-            const endMonth = format(dateRange.endDate, "MMMM");
-            
-            const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
-            const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
-            const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
-            
-            return paymentDate >= startDate && paymentDate <= endDate;
-          });
+        // Process current tenant
+        if (unit.tenant) {
+          const rentPayments = (unit.tenant.rentPayments || [])
+            .filter(payment => {
+              const paymentYear = payment.year.toString();
+              const paymentMonth = payment.month;
+              const startYear = dateRange.startDate.getFullYear();
+              const startMonth = format(dateRange.startDate, "MMMM");
+              const endYear = dateRange.endDate.getFullYear();
+              const endMonth = format(dateRange.endDate, "MMMM");
+              
+              const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
+              const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
+              const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
+              
+              return paymentDate >= startDate && paymentDate <= endDate;
+            });
 
-        const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
-        totalPayments += totalPaid;
+          const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
+          totalPayments += totalPaid;
 
-        rentPayments.forEach(payment => {
-          unitPayments.push({
-            buildingName: building.name,
-            unitName: unit.name,
-            tenantName: unit.tenant.name,
-            amount: payment.amount,
-            paymentMethod: payment.paymentMethod
+          rentPayments.forEach(payment => {
+            unitPayments.push({
+              buildingName: building.name,
+              unitName: unit.name,
+              tenantName: unit.tenant.name,
+              amount: payment.amount,
+              paymentMethod: payment.paymentMethod
+            });
           });
-        });
+        }
+
+        // Process previous tenants
+        if (unit.previousTenants) {
+          unit.previousTenants.forEach(prevTenant => {
+            const rentPayments = (prevTenant.rentPayments || [])
+              .filter(payment => {
+                const paymentYear = payment.year.toString();
+                const paymentMonth = payment.month;
+                const startYear = dateRange.startDate.getFullYear();
+                const startMonth = format(dateRange.startDate, "MMMM");
+                const endYear = dateRange.endDate.getFullYear();
+                const endMonth = format(dateRange.endDate, "MMMM");
+                
+                const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
+                const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
+                const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
+                
+                return paymentDate >= startDate && paymentDate <= endDate;
+              });
+
+            const totalPaid = rentPayments.reduce((sum, payment) => sum + payment.amount, 0);
+            totalPayments += totalPaid;
+
+            rentPayments.forEach(payment => {
+              unitPayments.push({
+                buildingName: building.name,
+                unitName: unit.name,
+                tenantName: `${prevTenant.name} (Previous)`,
+                amount: payment.amount,
+                paymentMethod: payment.paymentMethod
+              });
+            });
+          });
+        }
       });
 
       const buildingElectricity = building.units.reduce((total, unit) => {
-        if (!unit.tenant) return total;
+        let unitTotal = 0;
         
-        return total + (unit.tenant.electricityRecords || [])
-          .filter(record => {
-            try {
-              const recordDate = ensureDate(record.date);
-              return recordDate >= dateRange.startDate && 
-                recordDate <= dateRange.endDate;
-            } catch (error) {
-              console.error("Error processing electricity record date:", error);
-              return false;
-            }
-          })
-          .reduce((sum, record) => sum + record.amount, 0);
+        // Process current tenant
+        if (unit.tenant) {
+          unitTotal += (unit.tenant.electricityRecords || [])
+            .filter(record => {
+              try {
+                const recordDate = ensureDate(record.date);
+                return recordDate >= dateRange.startDate && 
+                  recordDate <= dateRange.endDate;
+              } catch (error) {
+                console.error("Error processing electricity record date:", error);
+                return false;
+              }
+            })
+            .reduce((sum, record) => sum + record.amount, 0);
+        }
+        
+        // Process previous tenants
+        if (unit.previousTenants) {
+          unit.previousTenants.forEach(prevTenant => {
+            unitTotal += (prevTenant.electricityRecords || [])
+              .filter(record => {
+                try {
+                  const recordDate = ensureDate(record.date);
+                  return recordDate >= dateRange.startDate && 
+                    recordDate <= dateRange.endDate;
+                } catch (error) {
+                  console.error("Error processing electricity record date:", error);
+                  return false;
+                }
+              })
+              .reduce((sum, record) => sum + record.amount, 0);
+          });
+        }
+        
+        return total + unitTotal;
       }, 0);
 
       const buildingExpenses = (expenses || [])
@@ -231,10 +347,12 @@ const Reports = () => {
     const calculatedTotalExpense = propertyReports.reduce((sum, report) => sum + report.expenses, 0);
     
     const detailedPayments = userBuildings.flatMap(building =>
-      building.units
-        .filter(unit => unit.tenant)
-        .flatMap(unit => 
-          (unit.tenant.rentPayments || [])
+      building.units.flatMap(unit => {
+        const payments = [];
+        
+        // Process current tenant payments
+        if (unit.tenant) {
+          const currentTenantPayments = (unit.tenant.rentPayments || [])
             .filter(payment => {
               const paymentYear = payment.year.toString();
               const paymentMonth = payment.month;
@@ -256,8 +374,44 @@ const Reports = () => {
               amount: payment.amount,
               paymentMethod: payment.paymentMethod,
               month: `${payment.month} ${payment.year}`
-            }))
-        )
+            }));
+          
+          payments.push(...currentTenantPayments);
+        }
+        
+        // Process previous tenant payments
+        if (unit.previousTenants) {
+          unit.previousTenants.forEach(prevTenant => {
+            const prevTenantPayments = (prevTenant.rentPayments || [])
+              .filter(payment => {
+                const paymentYear = payment.year.toString();
+                const paymentMonth = payment.month;
+                const startYear = dateRange.startDate.getFullYear();
+                const startMonth = format(dateRange.startDate, "MMMM");
+                const endYear = dateRange.endDate.getFullYear();
+                const endMonth = format(dateRange.endDate, "MMMM");
+                
+                const paymentDate = parse(`${paymentMonth} ${paymentYear}`, "MMMM yyyy", new Date());
+                const startDate = parse(`${startMonth} ${startYear}`, "MMMM yyyy", new Date());
+                const endDate = parse(`${endMonth} ${endYear}`, "MMMM yyyy", new Date());
+                
+                return paymentDate >= startDate && paymentDate <= endDate;
+              })
+              .map(payment => ({
+                buildingName: building.name,
+                unitName: unit.name,
+                tenantName: `${prevTenant.name} (Previous)`,
+                amount: payment.amount,
+                paymentMethod: payment.paymentMethod,
+                month: `${payment.month} ${payment.year}`
+              }));
+            
+            payments.push(...prevTenantPayments);
+          });
+        }
+        
+        return payments;
+      })
     );
 
     setReportData({
