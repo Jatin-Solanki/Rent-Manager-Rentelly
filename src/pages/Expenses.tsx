@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { BadgeDollarSign, Plus, Search, Filter, Trash2 } from "lucide-react";
+import { BadgeDollarSign, Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -37,22 +37,15 @@ import { fetchExpenses } from "@/lib/firebaseUtils";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ensureDate } from "@/lib/firebase";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+// import { EditExpenseDialog } from "@/components/dialogs/EditExpenseDialog";
+import { Expense } from "@/context/RentRoostContext";
 
 const Expenses = () => {
   const { expenses, addExpense, buildings, deleteExpense } = useRentRoost();
   const { currentUser } = useAuth();
   const [open, setOpen] = useState(false);
+  const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     date: new Date(),
@@ -116,11 +109,18 @@ const Expenses = () => {
     }
   };
 
+  const handleEditExpense = (expense: Expense) => {
+    setEditExpense(expense);
+    setEditOpen(true);
+  };
+
   const handleDeleteExpense = async (expenseId: string) => {
-    try {
-      await deleteExpense(expenseId);
-    } catch (error) {
-      console.error("Error deleting expense:", error);
+    if (window.confirm("Are you sure you want to delete this expense?")) {
+      try {
+        await deleteExpense(expenseId);
+      } catch (error) {
+        console.error("Error deleting expense:", error);
+      }
     }
   };
 
@@ -360,7 +360,7 @@ const Expenses = () => {
                     <TableHead>Property</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -381,34 +381,24 @@ const Expenses = () => {
                       <TableCell className="text-right font-medium">
                         ₹{expense.amount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Expense</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this expense? This action cannot be undone.
-                                <br /><br />
-                                <strong>Amount:</strong> ₹{expense.amount.toLocaleString()}<br />
-                                <strong>Description:</strong> {expense.description}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteExpense(expense.id)}
-                                className="bg-red-600 hover:bg-red-700"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditExpense(expense)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteExpense(expense.id)}
+                            className="text-red-600 hover:text-red-700 hover:border-red-300"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -431,6 +421,19 @@ const Expenses = () => {
             </div>
           )}
         </div>
+
+        {/* {editExpense && (
+          // <EditExpenseDialog
+          //   expense={editExpense}
+          //   open={editOpen}
+          //   onOpenChange={(open) => {
+          //     setEditOpen(open);
+          //     if (!open) {
+          //       setEditExpense(null);
+          //     }
+          //   }}
+          // />
+        )} */}
       </div>
     </Layout>
   );

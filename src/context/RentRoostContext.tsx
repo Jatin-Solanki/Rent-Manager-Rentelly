@@ -4,16 +4,13 @@ import {
   subscribeToBuildings, 
   subscribeToExpenses, 
   subscribeToReminders,
-  subscribeToTenants,
   addBuilding as fbAddBuilding,
   updateBuilding,
   updateUnit,
   addExpense as fbAddExpense,
   addReminder as fbAddReminder,
   updateReminder,
-  addTenantToPrevious,
   uploadTenantDocument,
-  fetchPreviousTenants,
   fetchExpenses,
   deleteDoc,
   doc
@@ -70,6 +67,10 @@ export type Tenant = {
   moveOutDate?: Date | null;
   ownerId?: string;
   otherDocuments?: string | File;
+  buildingId?: string;
+  buildingName?: string;
+  unitId?: string;
+  unitName?: string;
 };
 
 export type Unit = {
@@ -79,6 +80,8 @@ export type Unit = {
   details?: string;
   tenant: Tenant | null;
   previousTenants: Tenant[];
+  buildingId?: string;
+  buildingName?: string;
 };
 
 export type Building = {
@@ -147,6 +150,26 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { currentUser } = useAuth();
 
+  // Extract previous tenants from all building units
+  const extractPreviousTenantsFromBuildings = (buildings: Building[]) => {
+    const allPreviousTenants: Tenant[] = [];
+    buildings.forEach(building => {
+      building.units.forEach(unit => {
+        if (unit.previousTenants && unit.previousTenants.length > 0) {
+          const tenantsWithContext = unit.previousTenants.map(tenant => ({
+            ...tenant,
+            buildingId: building.id,
+            buildingName: building.name,
+            unitId: unit.id,
+            unitName: unit.name,
+          }));
+          allPreviousTenants.push(...tenantsWithContext);
+        }
+      });
+    });
+    return allPreviousTenants;
+  };
+
   useEffect(() => {
     if (!currentUser) {
       setBuildings([]);
@@ -162,17 +185,6 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setIsLoading(true);
     console.log("Setting up Firebase subscriptions for user:", currentUser.uid);
     
-    const loadPreviousTenants = async () => {
-      try {
-        console.log("Performing initial fetch of previous tenants");
-        const tenants = await fetchPreviousTenants();
-        console.log("Initial previousTenants fetch successful:", tenants.length, "tenants");
-        setPreviousTenants(tenants);
-      } catch (error) {
-        console.error("Error in initial previousTenants fetch:", error);
-      }
-    };
-    
     const loadInitialExpenses = async () => {
       try {
         console.log("Performing initial fetch of expenses");
@@ -184,12 +196,17 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       }
     };
     
-    loadPreviousTenants();
     loadInitialExpenses();
     
     const unsubscribeBuildings = subscribeToBuildings((data) => {
       console.log("Buildings subscription updated:", data.length, "buildings");
       setBuildings(data);
+      
+      // Extract and update previous tenants from building units
+      const previousTenantsFromBuildings = extractPreviousTenantsFromBuildings(data);
+      console.log("Extracted previous tenants from buildings:", previousTenantsFromBuildings.length);
+      setPreviousTenants(previousTenantsFromBuildings);
+      
       if (currentBuilding) {
         const updated = data.find(b => b.id === currentBuilding.id);
         if (updated) setCurrentBuilding(updated);
@@ -217,13 +234,6 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setReminders(data);
     });
     
-    const unsubscribeTenants = subscribeToTenants((data) => {
-      console.log("Previous tenants subscription data received:", data.length, "tenants");
-      if (data.length > 0 || previousTenants.length === 0) {
-        setPreviousTenants(data);
-      }
-    });
-    
     setIsLoading(false);
     
     return () => {
@@ -231,7 +241,6 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       unsubscribeBuildings();
       unsubscribeExpenses();
       unsubscribeReminders();
-      unsubscribeTenants();
     };
   }, [currentUser]);
 
@@ -248,6 +257,8 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         name: `Unit ${index + 1}`,
         tenant: null,
         previousTenants: [],
+        buildingId: '',
+        buildingName: '',
       }));
 
       const newBuilding: Omit<Building, 'id'> = {
@@ -612,13 +623,21 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         electricityRecords: tenant.electricityRecords || [],
       };
       
-      console.log("Adding tenant to previous tenants collection:", updatedTenant.name);
-      await addTenantToPrevious(updatedTenant);
+      // Add building info to tenant for proper association
+      const tenantWithBuildingInfo = {
+        ...updatedTenant,
+        buildingId: currentBuilding.id,
+        buildingName: currentBuilding.name,
+        unitId: unit.id,
+        unitName: unit.name,
+      };
       
       const updatedUnit = {
         ...unit,
-        previousTenants: [...unit.previousTenants, updatedTenant],
+        previousTenants: [...unit.previousTenants, tenantWithBuildingInfo],
         tenant: null,
+        buildingId: currentBuilding.id,
+        buildingName: currentBuilding.name,
       };
       
       const updatedBuilding = {
@@ -664,6 +683,7 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
     userBuildings.forEach(building => {
       building.units.forEach(unit => {
+        // Process current tenant payments
         if (unit.tenant) {
           (unit.tenant.rentPayments || [])
             .forEach(payment => {
@@ -691,6 +711,35 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
               }
             });
         }
+
+        // Process previous tenants payments
+        (unit.previousTenants || []).forEach(previousTenant => {
+          (previousTenant.rentPayments || [])
+            .forEach(payment => {
+              try {
+                const paymentDate = ensureDate(payment.date);
+                if (paymentDate >= startDate && paymentDate <= endDate) {
+                  totalRent += payment.amount;
+                  console.log(`Added previous tenant rent payment: ${payment.amount} from ${format(paymentDate, 'yyyy-MM-dd')}`);
+                }
+              } catch (error) {
+                console.error("Error processing previous tenant payment date:", error);
+              }
+            });
+          
+          (previousTenant.electricityRecords || [])
+            .forEach(record => {
+              try {
+                const recordDate = ensureDate(record.date);
+                if (recordDate >= startDate && recordDate <= endDate) {
+                  totalElectricity += record.amount;
+                  console.log(`Added previous tenant electricity: ${record.amount} from ${format(recordDate, 'yyyy-MM-dd')}`);
+                }
+              } catch (error) {
+                console.error("Error processing previous tenant electricity record date:", error);
+              }
+            });
+        });
       });
     });
 

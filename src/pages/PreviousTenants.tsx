@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useRentRoost } from "@/context/RentRoostContext";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { 
   Dialog, 
@@ -26,7 +26,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
-import { fetchPreviousTenants } from "@/lib/firebaseUtils";
+// Helper function to safely format dates
+const formatSafeDate = (date: Date | string | null | undefined, fallback: string = "Unknown"): string => {
+  if (!date) return fallback;
+  
+  const dateObj = date instanceof Date ? date : new Date(date);
+  return isValid(dateObj) ? format(dateObj, "MMM d, yyyy") : fallback;
+};
 
 const PreviousTenants = () => {
   const { previousTenants, buildings } = useRentRoost();
@@ -34,20 +40,7 @@ const PreviousTenants = () => {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<string>("recent");
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        const tenants = await fetchPreviousTenants();
-        console.log("Directly fetched tenants on mount:", tenants);
-      } catch (err) {
-        console.error("Error fetching previous tenants on mount:", err);
-      }
-    };
-    
-    if (auth.currentUser) {
-      loadInitialData();
-    }
-  }, []);
+  // Previous tenants are now loaded from building units automatically
 
   useEffect(() => {
     console.log("PreviousTenants component rendered with tenant count:", previousTenants.length);
@@ -190,20 +183,24 @@ const PreviousTenants = () => {
                       <p className="text-gray-500">Members</p>
                       <p>{tenant.memberCount}</p>
                     </div>
+                    <div>
+                      <p className="text-gray-500">Building</p>
+                      <p className="font-medium">{(tenant as any).buildingName || 'Unknown'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Unit</p>
+                      <p>{(tenant as any).unitName || 'Unknown'}</p>
+                    </div>
                     {tenant.moveInDate && (
                       <div>
                         <p className="text-gray-500">Move In</p>
-                        <p>{tenant.moveInDate instanceof Date ? 
-                            format(tenant.moveInDate, "MMM d, yyyy") : 
-                            format(new Date(tenant.moveInDate), "MMM d, yyyy")}</p>
+                        <p>{formatSafeDate(tenant.moveInDate)}</p>
                       </div>
                     )}
                     {tenant.moveOutDate && (
                       <div>
                         <p className="text-gray-500">Move Out</p>
-                        <p>{tenant.moveOutDate instanceof Date ? 
-                            format(tenant.moveOutDate, "MMM d, yyyy") : 
-                            format(new Date(tenant.moveOutDate), "MMM d, yyyy")}</p>
+                        <p>{formatSafeDate(tenant.moveOutDate)}</p>
                       </div>
                     )}
                   </div>
@@ -247,8 +244,7 @@ const PreviousTenants = () => {
                     <div className="flex items-center gap-1 mt-1">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {tenant.moveInDate instanceof Date ? format(tenant.moveInDate, "MMM d, yyyy") : "Unknown"} — 
-                        {tenant.moveOutDate instanceof Date ? format(tenant.moveOutDate, "MMM d, yyyy") : "Unknown"}
+                        {formatSafeDate(tenant.moveInDate)} — {formatSafeDate(tenant.moveOutDate)}
                       </span>
                     </div>
                   )}
@@ -272,6 +268,14 @@ const PreviousTenants = () => {
                   <div className="p-3 bg-gray-50 rounded-lg">
                     <Label className="text-xs text-gray-500">Room Details</Label>
                     <p className="font-medium">{tenant.roomDetails || "N/A"}</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <Label className="text-xs text-gray-500">Building</Label>
+                    <p className="font-medium">{(tenant as any).buildingName || "N/A"}</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <Label className="text-xs text-gray-500">Unit</Label>
+                    <p className="font-medium">{(tenant as any).unitName || "N/A"}</p>
                   </div>
                 </div>
 
@@ -369,16 +373,16 @@ const PreviousTenants = () => {
                         <TableBody>
                           {tenant.rentPayments
                             .sort((a, b) => {
-                              const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
-                              const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
-                              return dateB - dateA;
+                              const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+                              const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+                              const timeA = isValid(dateA) ? dateA.getTime() : 0;
+                              const timeB = isValid(dateB) ? dateB.getTime() : 0;
+                              return timeB - timeA;
                             })
                             .map((payment) => (
                               <TableRow key={payment.id}>
                                 <TableCell>
-                                  {payment.date instanceof Date ? 
-                                    format(payment.date, "MMM d, yyyy") : 
-                                    format(new Date(payment.date), "MMM d, yyyy")}
+                                  {formatSafeDate(payment.date)}
                                 </TableCell>
                                 <TableCell>{payment.month}</TableCell>
                                 <TableCell>{payment.year}</TableCell>
@@ -412,16 +416,16 @@ const PreviousTenants = () => {
                         <TableBody>
                           {tenant.electricityRecords
                             .sort((a, b) => {
-                              const dateA = a.date instanceof Date ? a.date.getTime() : new Date(a.date).getTime();
-                              const dateB = b.date instanceof Date ? b.date.getTime() : new Date(b.date).getTime();
-                              return dateB - dateA;
+                              const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+                              const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+                              const timeA = isValid(dateA) ? dateA.getTime() : 0;
+                              const timeB = isValid(dateB) ? dateB.getTime() : 0;
+                              return timeB - timeA;
                             })
                             .map((record) => (
                               <TableRow key={record.id}>
                                 <TableCell>
-                                  {record.date instanceof Date ? 
-                                    format(record.date, "MMM d, yyyy") : 
-                                    format(new Date(record.date), "MMM d, yyyy")}
+                                  {formatSafeDate(record.date)}
                                 </TableCell>
                                 <TableCell>{record.previousReading}</TableCell>
                                 <TableCell>{record.currentReading}</TableCell>
@@ -442,13 +446,9 @@ const PreviousTenants = () => {
                   <div>
                     <Label>Tenancy Period</Label>
                     <p className="mt-1 text-sm">
-                      From: {tenant.moveInDate instanceof Date ? 
-                        format(tenant.moveInDate, "MMM d, yyyy") : 
-                        format(new Date(tenant.moveInDate), "MMM d, yyyy")}
+                      From: {formatSafeDate(tenant.moveInDate)}
                       <br />
-                      To: {tenant.moveOutDate instanceof Date ? 
-                        format(tenant.moveOutDate, "MMM d, yyyy") : 
-                        format(new Date(tenant.moveOutDate), "MMM d, yyyy")}
+                      To: {formatSafeDate(tenant.moveOutDate)}
                     </p>
                   </div>
                 )}
