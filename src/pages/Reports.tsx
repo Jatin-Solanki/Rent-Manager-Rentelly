@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { format, subMonths, parse } from "date-fns";
+import { format, subMonths, parse, startOfMonth } from "date-fns";
 import { Label } from "@/components/ui/label";
 import {
   Bar,
@@ -39,7 +39,7 @@ const Reports = () => {
   const { buildings, expenses, getTotalsByDateRange } = useRentRoost();
   const { currentUser } = useAuth();
   const [dateRange, setDateRange] = useState({
-    startDate: subMonths(new Date(), 1),
+    startDate: startOfMonth(new Date()),
     endDate: new Date(),
   });
   const [reportData, setReportData] = useState({

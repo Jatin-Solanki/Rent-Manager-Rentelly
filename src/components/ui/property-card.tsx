@@ -1,15 +1,15 @@
-
 import { Building } from "@/context/RentRoostContext";
 import { Card, CardContent, CardFooter, CardHeader } from "./card";
-import { Building as BuildingIcon } from "lucide-react";
+import { Building as BuildingIcon, Trash2 } from "lucide-react";
 import { Button } from "./button";
 
 interface PropertyCardProps {
   building: Building;
   onSelect: (buildingId: string) => void;
+  onDelete: (buildingId: string) => void;
 }
 
-export function PropertyCard({ building, onSelect }: PropertyCardProps) {
+export function PropertyCard({ building, onSelect, onDelete }: PropertyCardProps) {
   const occupiedUnits = building.units.filter(unit => unit.tenant !== null).length;
   const occupancyRate = Math.round((occupiedUnits / building.unitsCount) * 100);
   
@@ -38,7 +38,18 @@ export function PropertyCard({ building, onSelect }: PropertyCardProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-end">
+      <CardFooter className="p-4 pt-0 flex justify-between gap-2">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(building.id);
+          }}
+          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
         <Button variant="default" onClick={() => onSelect(building.id)}>
           View Units
         </Button>

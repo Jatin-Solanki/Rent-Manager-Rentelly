@@ -1,4 +1,3 @@
-
 import { db, auth, storage } from './firebase';
 import { 
   collection, 
@@ -139,6 +138,32 @@ export const addBuilding = async (building: Omit<Building, 'id'>): Promise<strin
     return docRef.id;
   } catch (error) {
     console.error("Error adding building in firebaseUtils:", error);
+    throw error;
+  }
+};
+
+export const deleteBuilding = async (buildingId: string): Promise<void> => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("No authenticated user");
+
+    // First verify the building belongs to the current user
+    const buildingRef = doc(db, 'buildings', buildingId);
+    const buildingDoc = await getDoc(buildingRef);
+    
+    if (!buildingDoc.exists()) {
+      throw new Error("Building not found");
+    }
+    
+    const buildingData = buildingDoc.data() as Building;
+    if (buildingData.ownerId !== currentUser.uid) {
+      throw new Error("Unauthorized: You can only delete your own properties");
+    }
+
+    await deleteDoc(buildingRef);
+    console.log(`Building ${buildingId} deleted successfully`);
+  } catch (error) {
+    console.error("Error deleting building:", error);
     throw error;
   }
 };

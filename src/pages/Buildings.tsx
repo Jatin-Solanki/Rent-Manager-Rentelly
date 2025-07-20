@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { Layout } from "@/components/layout/Layout";
 import { Plus, Search, Building as BuildingIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,13 +22,16 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const Buildings = () => {
-  const { buildings, addBuilding } = useRentRoost();
+  const { buildings, addBuilding, deleteBuilding } = useRentRoost();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedBuildingForDelete, setSelectedBuildingForDelete] = useState<{ id: string; name: string } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     unitsCount: "",
@@ -92,6 +96,35 @@ const Buildings = () => {
 
   const handleSelectBuilding = (buildingId: string) => {
     navigate(`/buildings/${buildingId}`);
+  };
+
+  const handleDeleteBuilding = (buildingId: string) => {
+    const building = buildings.find(b => b.id === buildingId);
+    if (building) {
+      setSelectedBuildingForDelete({ id: building.id, name: building.name });
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedBuildingForDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await deleteBuilding(selectedBuildingForDelete.id);
+      setDeleteDialogOpen(false);
+      setSelectedBuildingForDelete(null);
+    } catch (error) {
+      console.error("Error deleting building:", error);
+      // Error handling is done in the context
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setSelectedBuildingForDelete(null);
   };
 
   useEffect(() => {
@@ -192,10 +225,11 @@ const Buildings = () => {
         {buildings.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredBuildings.map((building) => (
-              <PropertyCard
+               <PropertyCard
                 key={building.id}
                 building={building}
                 onSelect={handleSelectBuilding}
+                onDelete={handleDeleteBuilding}
               />
             ))}
           </div>
@@ -214,6 +248,16 @@ const Buildings = () => {
             </Button>
           </div>
         )}
+
+        <ConfirmDeleteDialog
+          open={deleteDialogOpen}
+          onClose={handleCloseDeleteDialog}
+          onConfirm={handleConfirmDelete}
+          title="Delete Property"
+          description="Are you sure you want to delete this property?"
+          itemName={selectedBuildingForDelete?.name || ""}
+          loading={deleteLoading}
+        />
       </div>
     </Layout>
   );
