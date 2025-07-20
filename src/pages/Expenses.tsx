@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { BadgeDollarSign, Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { BadgeDollarSign, Plus, Search, Filter, Edit, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -37,8 +37,17 @@ import { fetchExpenses } from "@/lib/firebaseUtils";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { ensureDate } from "@/lib/firebase";
-// import { EditExpenseDialog } from "@/components/dialogs/EditExpenseDialog";
+// import { EditExpenseDialog } from "../components/dialogs/EditExpenseDialog";
 import { Expense } from "@/context/RentRoostContext";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const Expenses = () => {
   const { expenses, addExpense, buildings, deleteExpense } = useRentRoost();
@@ -47,6 +56,10 @@ const Expenses = () => {
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     date: new Date(),
     amount: "",
@@ -128,14 +141,55 @@ const Expenses = () => {
     if (!currentUser) return false;
     if (!expense.description) return false;
     
-    return expense.description.toLowerCase().includes(searchTerm.toLowerCase());
+    // Search filter
+    const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch) return false;
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      const expenseDate = ensureDate(expense.date);
+      const fromDate = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate()) : null;
+      const toDate = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59) : null;
+      
+      if (fromDate && expenseDate < fromDate) return false;
+      if (toDate && expenseDate > toDate) return false;
+    }
+    
+    return true;
   })
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const totalExpenses = expenses.reduce((total, expense) => {
-    if (!currentUser) return total;
+  // Pagination logic
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedExpenses = filteredExpenses.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo]);
+
+  const clearDateFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
+
+  // Calculate total for filtered/date range expenses
+  const filteredTotalExpenses = filteredExpenses.reduce((total, expense) => {
     return total + expense.amount;
   }, 0);
+
+  const getDateRangeLabel = () => {
+    if (dateFrom && dateTo) {
+      return `${format(dateFrom, "MMM d, yyyy")} - ${format(dateTo, "MMM d, yyyy")}`;
+    } else if (dateFrom) {
+      return `From ${format(dateFrom, "MMM d, yyyy")}`;
+    } else if (dateTo) {
+      return `Until ${format(dateTo, "MMM d, yyyy")}`;
+    } else {
+      return "All Time";
+    }
+  };
 
   const getBuildingName = (buildingId?: string) => {
     if (!buildingId) return null;
@@ -156,15 +210,6 @@ const Expenses = () => {
     const building = buildings.find(b => b.id === buildingId);
     return building ? building.units : [];
   };
-
-  const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const currentMonthExpenses = expenses
-    .filter(expense => {
-      const expenseDate = ensureDate(expense.date);
-      return expenseDate >= startOfMonth && expenseDate <= today;
-    })
-    .reduce((total, expense) => total + expense.amount, 0);
 
   return (
     <Layout title="Expenses">
@@ -228,6 +273,7 @@ const Expenses = () => {
                   <Input
                     id="amount"
                     type="number"
+                    placeholder="Enter Amount"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     className="col-span-3"
@@ -239,6 +285,7 @@ const Expenses = () => {
                   </Label>
                   <Input
                     id="description"
+                    placeholder="Add Description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="col-span-3"
@@ -299,112 +346,237 @@ const Expenses = () => {
           </Dialog>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-1">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Expenses</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">₹{totalExpenses.toLocaleString()}</div>
+                <div className="text-2xl font-bold">₹{filteredTotalExpenses.toLocaleString()}</div>
                 <div className="p-2 bg-red-100 rounded-full text-red-600">
                   <BadgeDollarSign className="h-5 w-5" />
                 </div>
               </div>
-              <p className="text-sm text-gray-500 mt-2">All time expenses</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Current Month Expenses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">₹{currentMonthExpenses.toLocaleString()}</div>
-                <div className="p-2 bg-red-100 rounded-full text-red-600">
-                  <BadgeDollarSign className="h-5 w-5" />
-                </div>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">Expenses this month</p>
+              <p className="text-sm text-gray-500 mt-2">{getDateRangeLabel()}</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="rounded-md border">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="text-lg font-medium">Expense History</h3>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <Input
-                  placeholder="Search expenses..."
-                  className="pl-9 max-w-[200px]"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          <div className="flex flex-col gap-4 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium">Expense History</h3>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <Input
+                    placeholder="Search expenses..."
+                    className="pl-9 max-w-[200px]"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium">Filter by date:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateFrom && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateTo && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo ? format(dateTo, "MMM d, yyyy") : "To date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              {(dateFrom || dateTo) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearDateFilters}
+                  className="h-9"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear
+                </Button>
+              )}
+              
+              <div className="text-sm text-muted-foreground ml-auto">
+                Showing {paginatedExpenses.length} of {filteredExpenses.length} expenses
+              </div>
             </div>
           </div>
           
           {filteredExpenses.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Property</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExpenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>
-                        {format(new Date(expense.date), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>{expense.description}</TableCell>
-                      <TableCell>
-                        {expense.buildingId ? getBuildingName(expense.buildingId) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {expense.buildingId && expense.unitId
-                          ? getUnitName(expense.buildingId, expense.unitId)
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        ₹{expense.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditExpense(expense)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteExpense(expense.id)}
-                            className="text-red-600 hover:text-red-700 hover:border-red-300"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Property</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedExpenses.map((expense) => (
+                      <TableRow key={expense.id}>
+                        <TableCell>
+                          {format(new Date(expense.date), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>{expense.description}</TableCell>
+                        <TableCell>
+                          {expense.buildingId ? getBuildingName(expense.buildingId) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {expense.buildingId && expense.unitId
+                            ? getUnitName(expense.buildingId, expense.unitId)
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ₹{expense.amount.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-2 justify-end">
+                            {/* <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditExpense(expense)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button> */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="text-red-600 hover:text-red-700 hover:border-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(prev => Math.max(prev - 1, 1));
+                          }}
+                          className={cn(
+                            "cursor-pointer",
+                            currentPage === 1 && "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setCurrentPage(page);
+                                }}
+                                isActive={currentPage === page}
+                                className="cursor-pointer"
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        } else if (
+                          page === currentPage - 2 ||
+                          page === currentPage + 2
+                        ) {
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          );
+                        }
+                        return null;
+                      })}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                          }}
+                          className={cn(
+                            "cursor-pointer",
+                            currentPage === totalPages && "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           ) : (
             <div className="p-8 text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rentroost-accent mb-4">
@@ -423,16 +595,16 @@ const Expenses = () => {
         </div>
 
         {/* {editExpense && (
-          // <EditExpenseDialog
-          //   expense={editExpense}
-          //   open={editOpen}
-          //   onOpenChange={(open) => {
-          //     setEditOpen(open);
-          //     if (!open) {
-          //       setEditExpense(null);
-          //     }
-          //   }}
-          // />
+          <EditExpenseDialog
+            expense={editExpense}
+            open={editOpen}
+            onOpenChange={(open) => {
+              setEditOpen(open);
+              if (!open) {
+                setEditExpense(null);
+              }
+            }}
+          />
         )} */}
       </div>
     </Layout>
