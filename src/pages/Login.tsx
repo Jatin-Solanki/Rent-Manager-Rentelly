@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, Lock, Mail, Loader2 } from 'lucide-react';
+import { Building, Lock, Mail, Loader2, Users, Shield } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -181,13 +181,21 @@ export default function Login() {
             </CardFooter>
           </form>
           
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Are you a tenant?{" "}
-              <a href="/tenant/login" className="underline text-primary hover:text-primary/80">
-                Login here
-              </a>
-            </p>
+          <div className="mt-6 border-t pt-6">
+            <div className="text-center mb-3">
+              <p className="text-sm text-muted-foreground">
+                Switch login type
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => navigate('/tenant/login')}
+              type="button"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Login as Tenant
+            </Button>
           </div>
         </Card>
       </div>

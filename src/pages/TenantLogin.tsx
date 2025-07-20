@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Home, Phone, Calendar } from 'lucide-react';
+import { Loader2, Home, Phone, Calendar, Shield } from 'lucide-react';
 import { useTenantAuth } from '@/context/TenantAuthContext';
 
 const TenantLogin = () => {
@@ -110,13 +110,30 @@ const TenantLogin = () => {
             </Button>
           </form>
           
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Having trouble accessing your account?
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Please contact your property manager for assistance.
-            </p>
+          <div className="mt-6 border-t pt-6">
+            <div className="text-center mb-3">
+              <p className="text-sm text-muted-foreground">
+                Switch login type
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full mb-4" 
+              onClick={() => navigate('/login')}
+              type="button"
+            >
+              <Shield className="mr-2 h-4 w-4" />
+              Login as Admin
+            </Button>
+            
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Having trouble accessing your account?
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Please contact your property manager for assistance.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
