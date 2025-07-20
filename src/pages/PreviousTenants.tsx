@@ -27,11 +27,35 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
 // Helper function to safely format dates
-const formatSafeDate = (date: Date | string | null | undefined, fallback: string = "Unknown"): string => {
+const formatSafeDate = (date: any, fallback: string = "Unknown"): string => {
   if (!date) return fallback;
   
-  const dateObj = date instanceof Date ? date : new Date(date);
-  return isValid(dateObj) ? format(dateObj, "MMM d, yyyy") : fallback;
+  try {
+    let dateObj;
+    
+    // Handle Firestore timestamp
+    if (date && typeof date === 'object' && date.toDate) {
+      dateObj = date.toDate();
+    }
+    // Handle Firestore timestamp with seconds
+    else if (date && typeof date === 'object' && date.seconds) {
+      dateObj = new Date(date.seconds * 1000);
+    }
+    // Handle regular date strings/objects
+    else {
+      dateObj = date instanceof Date ? date : new Date(date);
+    }
+    
+    if (!isValid(dateObj)) {
+      console.log('Invalid date value in PreviousTenants:', date);
+      return fallback;
+    }
+    
+    return format(dateObj, "MMM d, yyyy");
+  } catch (error) {
+    console.error('Date formatting error in PreviousTenants:', error, 'Original date:', date);
+    return fallback;
+  }
 };
 
 const PreviousTenants = () => {
