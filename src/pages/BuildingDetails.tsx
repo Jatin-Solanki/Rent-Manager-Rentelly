@@ -131,6 +131,7 @@ const BuildingDetails = () => {
         rentAmount: Number(formData.rentAmount) || 0,
         roomDetails: formData.roomDetails,
         about: formData.about,
+        dateOfBirth: formData.dateOfBirth,
         moveInDate: formData.moveInDate,
         idProof: idProofUrl,
         policeVerification: policeVerificationUrl,

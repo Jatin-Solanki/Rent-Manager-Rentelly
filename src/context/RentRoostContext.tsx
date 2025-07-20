@@ -58,6 +58,7 @@ export type Tenant = {
   rentAmount: number;
   roomDetails: string;
   about: string;
+  dateOfBirth: string;
   idProof?: string | File;
   policeVerification?: string | File;
   rentPayments: RentPayment[];

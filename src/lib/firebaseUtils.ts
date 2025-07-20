@@ -1,3 +1,4 @@
+
 import { db, auth, storage } from './firebase';
 import { 
   collection, 
@@ -97,6 +98,24 @@ export const subscribeToBuildings = (callback: (buildings: Building[]) => void) 
     });
   } catch (error) {
     console.error("Error setting up building subscription:", error);
+    return () => {}; // Return empty function in case of error
+  }
+};
+
+// Tenant-specific buildings subscription (doesn't require authentication)
+export const subscribeToAllBuildings = (callback: (buildings: Building[]) => void) => {
+  try {
+    console.log("Setting up tenant buildings subscription");
+    
+    return onSnapshot(buildingsCol, snapshot => {
+      const buildings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Building));
+      console.log("Tenant buildings subscription updated:", buildings.length, "buildings");
+      callback(buildings);
+    }, error => {
+      console.error("Error subscribing to tenant buildings:", error);
+    });
+  } catch (error) {
+    console.error("Error setting up tenant building subscription:", error);
     return () => {}; // Return empty function in case of error
   }
 };

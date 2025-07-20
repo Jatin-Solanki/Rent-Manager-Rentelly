@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -60,6 +59,7 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
     rentAmount: "",
     roomDetails: "",
     about: "",
+    dateOfBirth: "",
     idProof: null,
     policeVerification: null,
     moveInDate: new Date(),
@@ -76,6 +76,7 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
           rentAmount: unit.tenant.rentAmount?.toString() || "",
           roomDetails: unit.tenant.roomDetails || "",
           about: unit.tenant.about || "",
+          dateOfBirth: unit.tenant.dateOfBirth || "",
           idProof: unit.tenant.idProof || null,
           policeVerification: unit.tenant.policeVerification || null,
           moveInDate: unit.tenant.moveInDate ? ensureValidDate(unit.tenant.moveInDate) : new Date(),
@@ -91,6 +92,7 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
           rentAmount: "",
           roomDetails: "",
           about: "",
+          dateOfBirth: "",
           idProof: null,
           policeVerification: null,
           moveInDate: new Date(),
@@ -106,6 +108,7 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
         rentAmount: "",
         roomDetails: "",
         about: "",
+        dateOfBirth: "",
         idProof: null,
         policeVerification: null,
         moveInDate: new Date(),
@@ -208,6 +211,21 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
               onChange={(e) => setFormData({ ...formData, about: e.target.value })}
               className="col-span-3"
               rows={3}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="dateOfBirth" className="text-right">
+              Date of Birth
+            </Label>
+            <Input
+              id="dateOfBirth"
+              type="password"
+              placeholder="Enter date of birth (DD/MM/YYYY)"
+              value={formData.dateOfBirth}
+              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+              className="col-span-3"
+              required
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

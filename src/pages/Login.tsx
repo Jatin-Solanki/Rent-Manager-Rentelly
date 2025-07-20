@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -181,6 +180,15 @@ export default function Login() {
               </Button>
             </CardFooter>
           </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Are you a tenant?{" "}
+              <a href="/tenant/login" className="underline text-primary hover:text-primary/80">
+                Login here
+              </a>
+            </p>
+          </div>
         </Card>
       </div>
     </div>
