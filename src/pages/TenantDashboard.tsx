@@ -46,12 +46,31 @@ const TenantDashboard = () => {
 
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
+    
     try {
-      const dateObj = new Date(date);
-      if (isNaN(dateObj.getTime())) return 'N/A';
+      let dateObj;
+      
+      // Handle Firestore timestamp
+      if (date && typeof date === 'object' && date.toDate) {
+        dateObj = date.toDate();
+      }
+      // Handle Firestore timestamp with seconds
+      else if (date && typeof date === 'object' && date.seconds) {
+        dateObj = new Date(date.seconds * 1000);
+      }
+      // Handle regular date strings/objects
+      else {
+        dateObj = new Date(date);
+      }
+      
+      if (isNaN(dateObj.getTime())) {
+        console.log('Invalid date value:', date);
+        return 'N/A';
+      }
+      
       return format(dateObj, 'dd MMM yyyy');
     } catch (error) {
-      console.error('Date formatting error:', error);
+      console.error('Date formatting error:', error, 'Original date:', date);
       return 'N/A';
     }
   };
@@ -244,7 +263,15 @@ const TenantDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {tenant.rentPayments
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .sort((a, b) => {
+                      const getDateValue = (date: any) => {
+                        if (!date) return 0;
+                        if (date && typeof date === 'object' && date.toDate) return date.toDate().getTime();
+                        if (date && typeof date === 'object' && date.seconds) return date.seconds * 1000;
+                        return new Date(date).getTime();
+                      };
+                      return getDateValue(b.date) - getDateValue(a.date);
+                    })
                     .map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>{formatDate(payment.date)}</TableCell>
@@ -285,7 +312,15 @@ const TenantDashboard = () => {
                 </TableHeader>
                 <TableBody>
                   {tenant.electricityRecords
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .sort((a, b) => {
+                      const getDateValue = (date: any) => {
+                        if (!date) return 0;
+                        if (date && typeof date === 'object' && date.toDate) return date.toDate().getTime();
+                        if (date && typeof date === 'object' && date.seconds) return date.seconds * 1000;
+                        return new Date(date).getTime();
+                      };
+                      return getDateValue(b.date) - getDateValue(a.date);
+                    })
                     .map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>{formatDate(record.date)}</TableCell>

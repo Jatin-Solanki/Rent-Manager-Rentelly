@@ -79,13 +79,13 @@ const TenantLogin = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="dob">Date of Birth</Label>
+              <Label htmlFor="dob">Password</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="dob"
                   type="text"
-                  placeholder="Enter your date of birth (DD/MM/YYYY)"
+                  placeholder="Enter Password"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   className="pl-10"
@@ -93,9 +93,9 @@ const TenantLogin = () => {
                   disabled={loading}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              {/* <p className="text-xs text-muted-foreground">
                 Use the format: DD/MM/YYYY (e.g., 15/08/1990)
-              </p>
+              </p> */}
             </div>
             
             <Button type="submit" className="w-full" disabled={loading}>
