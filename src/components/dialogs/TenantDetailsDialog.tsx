@@ -220,7 +220,7 @@ export function TenantDetailsDialog({ open, onClose, unit, onSubmit, loading }: 
             </Label>
             <Input
               id="dateOfBirth"
-              type="password"
+              type="text"
               placeholder="Enter date of birth (DD/MM/YYYY)"
               value={formData.dateOfBirth}
               onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
