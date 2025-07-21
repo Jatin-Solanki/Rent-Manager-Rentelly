@@ -6,6 +6,7 @@ export interface TenantFormData {
   rentAmount: number | string;
   roomDetails: string;
   about: string;
+  dateOfBirth: string;
   idProof?: File | string;
   policeVerification?: File | string;
   otherDocuments?: File | string;

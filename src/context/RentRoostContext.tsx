@@ -5,6 +5,7 @@ import {
   subscribeToExpenses, 
   subscribeToReminders,
   addBuilding as fbAddBuilding,
+  deleteBuilding as fbDeleteBuilding,
   updateBuilding,
   updateUnit,
   addExpense as fbAddExpense,
@@ -58,6 +59,7 @@ export type Tenant = {
   rentAmount: number;
   roomDetails: string;
   about: string;
+  dateOfBirth: string;
   idProof?: string | File;
   policeVerification?: string | File;
   rentPayments: RentPayment[];
@@ -114,6 +116,7 @@ type RentRoostContextType = {
   isLoading: boolean;
   
   addBuilding: (name: string, unitsCount: number, address?: string) => Promise<boolean>;
+  deleteBuilding: (buildingId: string) => Promise<void>;
   selectBuilding: (buildingId: string) => void;
   selectUnit: (unitId: string) => void;
   addTenant: (unitId: string, tenant: Omit<Tenant, 'id' | 'rentPayments' | 'electricityRecords' | 'active'>) => Promise<void>;
@@ -277,6 +280,33 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       console.error("Error adding building in context:", error);
       toast.error(`Failed to add building: ${error instanceof Error ? error.message : "Unknown error"}`);
       return false;
+    }
+  };
+
+  const deleteBuilding = async (buildingId: string) => {
+    try {
+      if (!currentUser) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("Deleting building:", buildingId);
+      await fbDeleteBuilding(buildingId);
+      
+      // Update local state
+      setBuildings(prev => prev.filter(b => b.id !== buildingId));
+      
+      // If the deleted building was currently selected, clear it
+      if (currentBuilding?.id === buildingId) {
+        setCurrentBuilding(null);
+        setCurrentUnit(null);
+      }
+
+      console.log("Building deleted successfully");
+      toast.success("Property deleted successfully");
+    } catch (error) {
+      console.error("Error deleting building:", error);
+      toast.error(`Failed to delete property: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw error;
     }
   };
 
@@ -936,6 +966,7 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     previousTenants,
     isLoading,
     addBuilding,
+    deleteBuilding,
     selectBuilding,
     selectUnit,
     addTenant,

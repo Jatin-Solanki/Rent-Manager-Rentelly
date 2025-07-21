@@ -101,6 +101,24 @@ export const subscribeToBuildings = (callback: (buildings: Building[]) => void) 
   }
 };
 
+// Tenant-specific buildings subscription (doesn't require authentication)
+export const subscribeToAllBuildings = (callback: (buildings: Building[]) => void) => {
+  try {
+    console.log("Setting up tenant buildings subscription");
+    
+    return onSnapshot(buildingsCol, snapshot => {
+      const buildings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Building));
+      console.log("Tenant buildings subscription updated:", buildings.length, "buildings");
+      callback(buildings);
+    }, error => {
+      console.error("Error subscribing to tenant buildings:", error);
+    });
+  } catch (error) {
+    console.error("Error setting up tenant building subscription:", error);
+    return () => {}; // Return empty function in case of error
+  }
+};
+
 export const addBuilding = async (building: Omit<Building, 'id'>): Promise<string> => {
   try {
     const currentUser = auth.currentUser;
@@ -120,6 +138,32 @@ export const addBuilding = async (building: Omit<Building, 'id'>): Promise<strin
     return docRef.id;
   } catch (error) {
     console.error("Error adding building in firebaseUtils:", error);
+    throw error;
+  }
+};
+
+export const deleteBuilding = async (buildingId: string): Promise<void> => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("No authenticated user");
+
+    // First verify the building belongs to the current user
+    const buildingRef = doc(db, 'buildings', buildingId);
+    const buildingDoc = await getDoc(buildingRef);
+    
+    if (!buildingDoc.exists()) {
+      throw new Error("Building not found");
+    }
+    
+    const buildingData = buildingDoc.data() as Building;
+    if (buildingData.ownerId !== currentUser.uid) {
+      throw new Error("Unauthorized: You can only delete your own properties");
+    }
+
+    await deleteDoc(buildingRef);
+    console.log(`Building ${buildingId} deleted successfully`);
+  } catch (error) {
+    console.error("Error deleting building:", error);
     throw error;
   }
 };

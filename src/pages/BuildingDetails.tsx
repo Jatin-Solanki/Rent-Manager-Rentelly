@@ -11,7 +11,8 @@ import { uploadTenantDocument } from "@/lib/firebaseUtils";
 import { Building, Unit } from "@/context/RentRoostContext";
 import { UnitCard } from "@/components/ui/unit-card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building as BuildingIcon, Home, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Building as BuildingIcon, Home, User, Search } from "lucide-react";
 import { toast } from "sonner";
 
 type DialogType = "details" | "rent" | "electric" | null;
@@ -25,6 +26,7 @@ const BuildingDetails = () => {
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (buildingId) {
@@ -131,6 +133,7 @@ const BuildingDetails = () => {
         rentAmount: Number(formData.rentAmount) || 0,
         roomDetails: formData.roomDetails,
         about: formData.about,
+        dateOfBirth: formData.dateOfBirth,
         moveInDate: formData.moveInDate,
         idProof: idProofUrl,
         policeVerification: policeVerificationUrl,
@@ -290,6 +293,19 @@ const BuildingDetails = () => {
 
   const occupiedUnits = currentBuilding.units.filter(unit => unit.tenant !== null).length;
   
+  // Filter units based on search query
+  const filteredUnits = currentBuilding.units.filter(unit => {
+    if (!searchQuery.trim()) return true;
+    
+    // Search by tenant name if tenant exists
+    if (unit.tenant && unit.tenant.name) {
+      return unit.tenant.name.toLowerCase().includes(searchQuery.toLowerCase());
+    }
+    
+    // If no tenant, don't show in search results unless search is empty
+    return false;
+  });
+  
   return (
     <Layout title={currentBuilding.name}>
       <div className="space-y-6 animate-fade-in">
@@ -341,10 +357,27 @@ const BuildingDetails = () => {
           </div>
         </div>
 
-        <h3 className="text-xl font-bold text-rentroost-dark mt-6">All Units</h3>
+        <div className="flex items-center justify-between mt-6">
+          <h3 className="text-xl font-bold text-rentroost-dark">All Units</h3>
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tenants by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {searchQuery && filteredUnits.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No tenants found matching "{searchQuery}"</p>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {currentBuilding.units.map((unit) => (
+          {filteredUnits.map((unit) => (
             <UnitCard
               key={unit.id}
               unit={unit}
