@@ -5,15 +5,17 @@ import { getStorage } from 'firebase/storage';
 import { format, isValid } from 'date-fns';
 
 // Your Firebase configuration
+
 const firebaseConfig = {
-  apiKey: "AIzaSyAbmezHRAG9fRs3Ps53vmVpSNeuf5BmiO8",
-  authDomain: "rent-manager-f2782.firebaseapp.com",
-  projectId: "rent-manager-f2782",
-  storageBucket: "gs://rent-manager-f2782.firebasestorage.app",  
-  messagingSenderId: "363176712466",
-  appId: "1:363176712466:web:68417f7e296ae18f38fbcb",
-  measurementId: "G-SVY5RTJWQ0"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
+
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
