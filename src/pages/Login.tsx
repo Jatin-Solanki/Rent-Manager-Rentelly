@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -163,7 +164,7 @@ export default function Login() {
                 </Dialog>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="space-y-3">
               <Button 
                 type="submit" 
                 className="w-full" 
@@ -178,25 +179,18 @@ export default function Login() {
                   'Sign in'
                 )}
               </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => navigate('/tenant/login')}
+                type="button"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Login as Tenant
+              </Button>
             </CardFooter>
           </form>
-          
-          <div className="mt-6 border-t pt-6">
-            <div className="text-center mb-3">
-              <p className="text-sm text-muted-foreground">
-                Switch login type
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              className="w-full" 
-              onClick={() => navigate('/tenant/login')}
-              type="button"
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Login as Tenant
-            </Button>
-          </div>
         </Card>
       </div>
     </div>
