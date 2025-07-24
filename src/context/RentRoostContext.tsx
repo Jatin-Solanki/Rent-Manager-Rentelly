@@ -93,6 +93,8 @@ export type Building = {
   address?: string;
   units: Unit[];
   ownerId: string;
+  propertyType?: 'PG' | 'Room/Flats';
+  sharingCount?: number;
 };
 
 export type Reminder = {
@@ -115,7 +117,7 @@ type RentRoostContextType = {
   previousTenants: Tenant[];
   isLoading: boolean;
   
-  addBuilding: (name: string, unitsCount: number, address?: string) => Promise<boolean>;
+  addBuilding: (name: string, unitsCount: number, address?: string, propertyType?: 'PG' | 'Room/Flats', sharingCount?: number) => Promise<boolean>;
   deleteBuilding: (buildingId: string) => Promise<void>;
   selectBuilding: (buildingId: string) => void;
   selectUnit: (unitId: string) => void;
@@ -247,29 +249,54 @@ const RentRoostProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     };
   }, [currentUser]);
 
-  const addBuilding = async (name: string, unitsCount: number, address?: string) => {
+  const addBuilding = async (name: string, unitsCount: number, address?: string, propertyType?: 'PG' | 'Room/Flats', sharingCount?: number) => {
     try {
-      console.log("Adding building:", { name, unitsCount, address });
+      console.log("Adding building:", { name, unitsCount, address, propertyType, sharingCount });
       
       if (!currentUser) {
         throw new Error("User not authenticated");
       }
       
-      const units: Unit[] = Array.from({ length: unitsCount }, (_, index) => ({
-        id: generateId(),
-        name: `Unit ${index + 1}`,
-        tenant: null,
-        previousTenants: [],
-        buildingId: '',
-        buildingName: '',
-      }));
+      let units: Unit[] = [];
+      
+      if (propertyType === 'PG' && sharingCount) {
+        // Create units with sharing format: Unit 1 (a), Unit 1 (b), etc.
+        const sharingLabels = Array.from({ length: sharingCount }, (_, i) => 
+          String.fromCharCode(97 + i) // 'a', 'b', 'c', etc.
+        );
+        
+        for (let unitIndex = 1; unitIndex <= unitsCount; unitIndex++) {
+          for (let shareIndex = 0; shareIndex < sharingCount; shareIndex++) {
+            units.push({
+              id: generateId(),
+              name: `Unit ${unitIndex} (${sharingLabels[shareIndex]})`,
+              tenant: null,
+              previousTenants: [],
+              buildingId: '',
+              buildingName: '',
+            });
+          }
+        }
+      } else {
+        // Default unit creation for Room/Flats
+        units = Array.from({ length: unitsCount }, (_, index) => ({
+          id: generateId(),
+          name: `Unit ${index + 1}`,
+          tenant: null,
+          previousTenants: [],
+          buildingId: '',
+          buildingName: '',
+        }));
+      }
 
       const newBuilding: Omit<Building, 'id'> = {
         name,
-        unitsCount,
+        unitsCount: propertyType === 'PG' && sharingCount ? unitsCount * sharingCount : unitsCount,
         address,
         units,
         ownerId: currentUser.uid,
+        ...(propertyType && { propertyType }),
+        ...(propertyType === 'PG' && sharingCount && { sharingCount }),
       };
 
       console.log("Prepared building data:", JSON.stringify(newBuilding));

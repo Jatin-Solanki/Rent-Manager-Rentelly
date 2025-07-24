@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ConfirmDeleteDialog } from "@/components/dialogs/ConfirmDeleteDialog";
 import { Layout } from "@/components/layout/Layout";
@@ -15,6 +14,7 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useRentRoost } from "@/context/RentRoostContext";
 import { PropertyCard } from "@/components/ui/property-card";
 import { useNavigate } from "react-router-dom";
@@ -35,12 +35,19 @@ const Buildings = () => {
   const [formData, setFormData] = useState({
     name: "",
     unitsCount: "",
-    address: ""
+    address: "",
+    propertyType: "Room/Flats" as 'PG' | 'Room/Flats',
+    sharingCount: ""
   });
 
   const handleAddBuilding = async () => {
     if (!formData.name || !formData.unitsCount) {
       toast.error("Please fill in the required fields");
+      return;
+    }
+
+    if (formData.propertyType === 'PG' && (!formData.sharingCount || Number(formData.sharingCount) < 2)) {
+      toast.error("Please enter a valid sharing count (minimum 2) for PG properties");
       return;
     }
 
@@ -64,11 +71,13 @@ const Buildings = () => {
       const success = await addBuilding(
         formData.name,
         Number(formData.unitsCount),
-        formData.address
+        formData.address,
+        formData.propertyType,
+        formData.propertyType === 'PG' ? Number(formData.sharingCount) : undefined
       );
       
       if (success) {
-        setFormData({ name: "", unitsCount: "", address: "" });
+        setFormData({ name: "", unitsCount: "", address: "", propertyType: "Room/Flats", sharingCount: "" });
         setOpen(false);
         toast.success("Property added successfully");
       } else {
@@ -199,6 +208,44 @@ const Buildings = () => {
                     className="col-span-3"
                   />
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-right">
+                    Property Type
+                  </Label>
+                  <div className="col-span-3">
+                    <RadioGroup
+                      value={formData.propertyType}
+                      onValueChange={(value) => setFormData({ ...formData, propertyType: value as 'PG' | 'Room/Flats', sharingCount: "" })}
+                      className="flex gap-6"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Room/Flats" id="room-flats" />
+                        <Label htmlFor="room-flats">Room/Flats</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="PG" id="pg" />
+                        <Label htmlFor="pg">PG</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </div>
+                {formData.propertyType === 'PG' && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="sharingCount" className="text-right">
+                      No. of Sharing
+                    </Label>
+                    <Input
+                      id="sharingCount"
+                      value={formData.sharingCount}
+                      onChange={(e) => setFormData({ ...formData, sharingCount: e.target.value })}
+                      placeholder="Number of sharing (e.g., 2, 3, 4)"
+                      type="number"
+                      className="col-span-3"
+                      required={formData.propertyType === 'PG'}
+                      min="2"
+                    />
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
