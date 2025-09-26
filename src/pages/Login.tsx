@@ -164,7 +164,7 @@ export default function Login() {
                 </Dialog>
               </div>
             </CardContent>
-            <CardFooter className="space-y-3">
+            <CardFooter className="flex flex-col gap-3">
               <Button 
                 type="submit" 
                 className="w-full" 
